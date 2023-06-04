@@ -12,7 +12,7 @@ try:
         SensorDeviceClass
     )
 except ImportError:
-    from homeassistant.components.sensor import SensorEntity, SensorStateClass, SensorDeviceClass
+    from homeassistant.components.sensor import SensorEntity, SensorStateClass, SensorDeviceClass, RestoreSensor
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_USERNAME, CONF_PASSWORD
@@ -31,6 +31,7 @@ from homeassistant.helpers.update_coordinator import (
 from .const import (
     ICON,
     DOMAIN,
+    CONF_METER_READING,
     EVERGY_OBJECT
 )
 
@@ -44,6 +45,17 @@ async def async_setup_entry(
 ) -> None:
     """Set up the Evergy platform."""
     
+    async def async_added_to_hass(self) -> None:
+        await super().async_added_to_hass()
+
+        if self.entity_description.key in RESTORE_SENSOR_TYPES:
+            state = await self.async_get_last_sensor_data()
+            _LOGGER.debug("State to restore for %s was %s", self.name, state)
+            if not state:
+                return
+            self._attr_native_value = state.native_value
+            self._attr_available = True
+
     async def async_update_data():
         evergy_api = hass.data[DOMAIN][config_entry.entry_id][EVERGY_OBJECT]
         await hass.async_add_executor_job(evergy_api.get_usage)
@@ -76,6 +88,7 @@ async def async_setup_entry(
     entities.append(EvergySensor(coordinator, hass, "address", config_entry.entry_id, "Address", "mdi:home", None))
     entities.append(EvergySensor(coordinator, hass, "billAmount", config_entry.entry_id, "Bill Amount", "mdi:currency-usd", None))
     entities.append(EvergySensor(coordinator, hass, "isPastDue", config_entry.entry_id, "Is Past Due", "mdi:calendar-range", None))
+    entities.append(EvergySensor(coordinator, hass, "meter", config_entry.entry_id, "Meter Reading", "mdi:transmission-tower", "kWh"))
     async_add_entities(entities, True)
 
     platform = entity_platform.async_get_current_platform()
@@ -89,7 +102,7 @@ async def async_setup_entry(
             return
 
 
-class EvergySensor(SensorEntity):
+class EvergySensor(SensorEntity, RestoreSensor):
     def __init__(self, coordinator, hass, sensor_type: str, namespace, nicename: str, icon: str, uom: str) -> None:
         self._coordinator = coordinator
         self._evergy_api = hass.data[DOMAIN][namespace][EVERGY_OBJECT]
@@ -107,6 +120,7 @@ class EvergySensor(SensorEntity):
             model="Evergy.com Utility Account",
             name=str(self._evergy_api.dashboard_data['addresses'][0]['street'])
         )
+        self._billDate = self._evergy_api.usage_data[-1]['billDate']
 
     @property
     def native_value(self):
@@ -114,8 +128,12 @@ class EvergySensor(SensorEntity):
             return str(self._evergy_api.dashboard_data['addresses'][0]['street'])
         elif(self._sensor_type == "billAmount" or self._sensor_type == "isPastDue"):
             return str(self._evergy_api.dashboard_data[self._sensor_type])
+        #elif(self._sensor_type == "meter":
         else:
-            return str(self._evergy_api.usage_data[-1][self._sensor_type])
+            if len(self._evergy_api.usage_data) > 0:
+                return str(self._evergy_api.usage_data[-1][self._sensor_type])
+            else:
+                return None
 
     @property
     def entity_registry_enabled_default(self):
@@ -127,7 +145,16 @@ class EvergySensor(SensorEntity):
         if(self._attr_native_unit_of_measurement == "kWh"): return SensorDeviceClass.ENERGY
 
     @property
+    def extra_state_attribures(self):
+        attributes = {
+                "billDate": self._billDate,
+                "meter_reading": self._meter_reading
+                }
+        return attributes
+
+    @property
     def state_class(self):
+        if(self._sensor_type == "meter"): return SensorStateClass.TOTAL_INCREASING
         if(self._sensor_type == "usage"): return SensorStateClass.TOTAL_INCREASING
         if(self._sensor_type == "cost"): return SensorStateClass.TOTAL_INCREASING
     

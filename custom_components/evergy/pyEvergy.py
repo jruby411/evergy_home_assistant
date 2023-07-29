@@ -50,31 +50,35 @@ class Evergy:
         self.session = requests.Session()
         logging.info("Logging in with username: " + self.username)
         login_form = self.session.get(self.login_url)
-        login_form_soup = BeautifulSoup(login_form.text, "html.parser")
-        csrf_token = login_form_soup.select(".login-form > input")[0]["value"]
-        csrf_token_name = login_form_soup.select(".login-form > input")[0]["name"]
-        login_payload = {
-            "Username": str(self.username),
-            "Password": str(self.password),
-            csrf_token_name: csrf_token,
-        }
-        r = self.session.post(
-            url=self.login_url, data=login_payload, allow_redirects=False
-        )
-        logging.debug("Login response: " + str(r.status_code))
-        r = self.session.get(self.account_summary_url)
-        account_data = r.json()
-        if len(account_data) == 0:
+        if login_form.status_code != 200:
+            logging.info(f"Web Status Code: {login_form.status_code}, Evergy Webservice Unavailable!")
             self.logged_in = False
         else:
-            self.account_number = account_data[0]['accountNumber']
-            self.dashboard_data = self.session.get(
-                self.account_dashboard_url.format(accountNum=self.account_number)
-            ).json()
-            self.premise_id = self.dashboard_data["addresses"][0]["premiseId"]
-            self.logged_in = (
-                self.account_number is not None and self.premise_id is not None
+            login_form_soup = BeautifulSoup(login_form.text, "html.parser")
+            csrf_token = login_form_soup.select(".login-form > input")[0]["value"]
+            csrf_token_name = login_form_soup.select(".login-form > input")[0]["name"]
+            login_payload = {
+                "Username": str(self.username),
+                "Password": str(self.password),
+                csrf_token_name: csrf_token,
+            }
+            r = self.session.post(
+                url=self.login_url, data=login_payload, allow_redirects=False
             )
+            logging.debug("Login response: " + str(r.status_code))
+            r = self.session.get(self.account_summary_url)
+            account_data = r.json()
+            if len(account_data) == 0:
+                self.logged_in = False
+            else:
+                self.account_number = account_data[0]['accountNumber']
+                self.dashboard_data = self.session.get(
+                    self.account_dashboard_url.format(accountNum=self.account_number)
+                ).json()
+                self.premise_id = self.dashboard_data["addresses"][0]["premiseId"]
+                self.logged_in = (
+                    self.account_number is not None and self.premise_id is not None
+                )
 
     def logout(self):
         logging.info("Logging out")

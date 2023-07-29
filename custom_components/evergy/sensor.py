@@ -31,6 +31,7 @@ from homeassistant.helpers.update_coordinator import (
 from .const import (
     ICON,
     DOMAIN,
+    CONF_ADDRESS,
     EVERGY_OBJECT
 )
 
@@ -58,23 +59,25 @@ async def async_setup_entry(
 
     # Immediate refresh
     await coordinator.async_request_refresh()
+    # this solves the problem of not being able to login at hass startup. At least the sensor can be created.
+    name = str(config_entry.data[CONF_ADDRESS])
 
-    _LOGGER.info("Adding sensor entities for Evergy account %s", config_entry.data[CONF_USERNAME])
+    _LOGGER.info("Adding sensor entities for Evergy account {}, address: {}", .format(config_entry.data[CONF_USERNAME], name))
     entities = [] 
-    entities.append(EvergySensor(coordinator, hass, "period", config_entry.entry_id, "Period", "mdi:clipboard-text-clock-outline", None))
-    entities.append(EvergySensor(coordinator, hass, "billDate", config_entry.entry_id, "Total Bill Date", "mdi:calendar-range", None))
-    entities.append(EvergySensor(coordinator, hass, "usage", config_entry.entry_id, "Usage Today", "mdi:transmission-tower", "kWh"))
-    entities.append(EvergySensor(coordinator, hass, "demand", config_entry.entry_id, "Demand", "mdi:transmission-tower", "kWh"))
-    entities.append(EvergySensor(coordinator, hass, "avgDemand", config_entry.entry_id, "Average Demand", "mdi:transmission-tower", "kWh"))
-    entities.append(EvergySensor(coordinator, hass, "peakDemand", config_entry.entry_id, "Peak Demand", "mdi:transmission-tower", "kWh"))
-    entities.append(EvergySensor(coordinator, hass, "peakDateTime", config_entry.entry_id, "Peak Time", "mdi:calendar-range", None))
-    entities.append(EvergySensor(coordinator, hass, "maxTemp", config_entry.entry_id, "Max Temp", "mdi:thermometer-high", "°F"))
-    entities.append(EvergySensor(coordinator, hass, "minTemp", config_entry.entry_id, "Min Temp", "mdi:thermometer-low", "°F"))
-    entities.append(EvergySensor(coordinator, hass, "avgTemp", config_entry.entry_id, "Average Temp", "mdi:thermometer-auto", "°F"))
-    entities.append(EvergySensor(coordinator, hass, "balance", config_entry.entry_id, "Balance", "mdi:currency-usd", None))
-    entities.append(EvergySensor(coordinator, hass, "address", config_entry.entry_id, "Address", "mdi:home", None))
-    entities.append(EvergySensor(coordinator, hass, "billAmount", config_entry.entry_id, "Bill Amount", "mdi:currency-usd", None))
-    entities.append(EvergySensor(coordinator, hass, "isPastDue", config_entry.entry_id, "Is Past Due", "mdi:calendar-range", None))
+    entities.append(EvergySensor(coordinator, hass, "period", config_entry.entry_id, name, "Period", "mdi:clipboard-text-clock-outline", None))
+    entities.append(EvergySensor(coordinator, hass, "billDate", config_entry.entry_id, name, "Total Bill Date", "mdi:calendar-range", None))
+    entities.append(EvergySensor(coordinator, hass, "usage", config_entry.entry_id, name, "Usage Today", "mdi:transmission-tower", "kWh"))
+    entities.append(EvergySensor(coordinator, hass, "demand", config_entry.entry_id, name, "Demand", "mdi:transmission-tower", "kWh"))
+    entities.append(EvergySensor(coordinator, hass, "avgDemand", config_entry.entry_id, name, "Average Demand", "mdi:transmission-tower", "kWh"))
+    entities.append(EvergySensor(coordinator, hass, "peakDemand", config_entry.entry_id, name, "Peak Demand", "mdi:transmission-tower", "kWh"))
+    entities.append(EvergySensor(coordinator, hass, "peakDateTime", config_entry.entry_id, name, "Peak Time", "mdi:calendar-range", None))
+    entities.append(EvergySensor(coordinator, hass, "maxTemp", config_entry.entry_id, name, "Max Temp", "mdi:thermometer-high", "°F"))
+    entities.append(EvergySensor(coordinator, hass, "minTemp", config_entry.entry_id, name, "Min Temp", "mdi:thermometer-low", "°F"))
+    entities.append(EvergySensor(coordinator, hass, "avgTemp", config_entry.entry_id, name, "Average Temp", "mdi:thermometer-auto", "°F"))
+    entities.append(EvergySensor(coordinator, hass, "balance", config_entry.entry_id, name, "Balance", "mdi:currency-usd", None))
+    entities.append(EvergySensor(coordinator, hass, "address", config_entry.entry_id, name, "Address", "mdi:home", None))
+    entities.append(EvergySensor(coordinator, hass, "billAmount", config_entry.entry_id, name, "Bill Amount", "mdi:currency-usd", None))
+    entities.append(EvergySensor(coordinator, hass, "isPastDue", config_entry.entry_id, name, "Is Past Due", "mdi:calendar-range", None))
     async_add_entities(entities, True)
 
     platform = entity_platform.async_get_current_platform()
@@ -89,7 +92,7 @@ async def async_setup_entry(
 
 
 class EvergySensor(SensorEntity):
-    def __init__(self, coordinator, hass, sensor_type: str, namespace, nicename: str, icon: str, uom: str) -> None:
+    def __init__(self, coordinator, hass, sensor_type: str, namespace, name, nicename: str, icon: str, uom: str) -> None:
         self._coordinator = coordinator
         self._evergy_api = hass.data[DOMAIN][namespace][EVERGY_OBJECT]
         self._sensor_type = sensor_type
@@ -101,10 +104,10 @@ class EvergySensor(SensorEntity):
         self._attr_native_unit_of_measurement = uom
         self._attr_should_poll = False
         self._attr_device_info = DeviceInfo(
-            identifiers={(DOMAIN, str(self._evergy_api.dashboard_data['addresses'][0]['street']))},
+            identifiers={(DOMAIN, name)},
             manufacturer="Evergy",
             model="Evergy.com Utility Account",
-            name=str(self._evergy_api.dashboard_data['addresses'][0]['street'])
+            name=name
         )
 
     @property

@@ -80,7 +80,7 @@ async def async_setup_entry(
 
     platform = entity_platform.async_get_current_platform()
 
-    @service.verify_domain_control(hass, DOMAIN)
+    @service.verify_domain_control(DOMAIN)
     async def async_service_handle(service_call: core.ServiceCall) -> None:
         """Handle for services."""
         entities = await platform.async_extract_from_service(service_call)
@@ -110,15 +110,15 @@ class EvergySensor(SensorEntity):
 
     @property
     def native_value(self):
-        if self._sensor_type == "address":
-            return str(self._evergy_api.dashboard_data['addresses'][0]['street'])
-        elif(self._sensor_type == "billAmount" or self._sensor_type == "isPastDue"):
-            return str(self._evergy_api.dashboard_data[self._sensor_type])
-        else:
-            try:
+        try:
+            if self._sensor_type == "address":
+                return str(self._evergy_api.dashboard_data['addresses'][0]['street'])
+            elif(self._sensor_type == "billAmount" or self._sensor_type == "isPastDue"):
+                return str(self._evergy_api.dashboard_data[self._sensor_type])
+            else:
                 return str(self._evergy_api.usage_data[-1][self._sensor_type])
-            except:
-                return None
+        except:
+            return None
 
     @property
     def entity_registry_enabled_default(self):

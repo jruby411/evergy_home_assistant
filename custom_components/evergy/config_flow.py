@@ -26,10 +26,11 @@ async def validate_input(hass: core.HomeAssistant, data):
     Data has the keys from DATA_SCHEMA with values provided by the user.
     """
     evergy_api = Evergy(data[CONF_USERNAME], data[CONF_PASSWORD])
-    await hass.async_add_executor_job(evergy_api.get_usage)
+    #await hass.async_add_executor_job(evergy_api.get_usage)
+    await evergy_api.get_usage()
 
     # Return info that you want to store in the config entry.
-    return {CONF_USERNAME: data[CONF_USERNAME], CONF_PASSWORD: data[CONF_PASSWORD], CONF_ADDRESS: await evergy_api.dashboard_data['addresses'][0]['street']}
+    return {CONF_USERNAME: data[CONF_USERNAME], CONF_PASSWORD: data[CONF_PASSWORD], CONF_ADDRESS: evergy_api.dashboard_data['addresses'][0]['street']}
 
 
 class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):

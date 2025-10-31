@@ -46,7 +46,7 @@ async def async_setup_entry(
     
     async def async_update_data():
         evergy_api = hass.data[DOMAIN][config_entry.entry_id][EVERGY_OBJECT]
-        await hass.async_add_executor_job(evergy_api.get_usage)
+        await evergy_api.get_usage()
 
     coordinator = DataUpdateCoordinator(
         hass,
@@ -109,17 +109,14 @@ class EvergySensor(SensorEntity):
         )
 
     @property
-    async def native_value(self):
+    def native_value(self):
         try:
             if self._sensor_type == "address":
-                ret = await self._evergy_api.dashboard_data['addresses'][0]['street']
-                return str(ret) 
+                return str(self._evergy_api.dashboard_data['addresses'][0]['street']) 
             elif(self._sensor_type == "billAmount" or self._sensor_type == "isPastDue"):
-                ret =  await self._evergy_api.dashboard_data[self._sensor_type]
-                return str(ret)
+                return str(self._evergy_api.dashboard_data[self._sensor_type])
             else:
-                ret = await self._evergy_api.usage_data[-1][self._sensor_type]
-                return str(ret)
+                return str(self._evergy_api.usage_data[-1][self._sensor_type])
         except:
             return None
 

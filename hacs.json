@@ -4,5 +4,5 @@
     "sensor"
   ],
   "iot_class": "cloud_pull",
-  "homeassistant": "2021.12.0b0"
+  "homeassistant": "2025.10.0"
 }

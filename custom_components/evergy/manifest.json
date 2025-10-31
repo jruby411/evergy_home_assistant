@@ -1,10 +1,10 @@
 {
     "dependencies": [],
-    "codeowners": ["Brad Sanders"],
+    "codeowners": ["Brad Sanders", "Jeff Ruby"],
     "config_flow": true,
-    "documentation": "https://github.com/thebradleysanders/Evergy",
+    "documentation": "https://github.com/jruby411/evergy_home_assistant",
     "domain": "evergy",
     "name": "Evergy",
-    "requirements": ["beautifulsoup4>=4.10.0", "requests"],
-    "version": "1.0.0"
+    "requirements": ["aiohttp"],
+    "version": "2.0.0"
   }

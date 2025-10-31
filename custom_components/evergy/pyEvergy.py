@@ -63,11 +63,6 @@ def get_end_date_from_number_of_intervals(
     return from_date + timedelta(days=num_intervals)
 
 
-day_before_yesterday = get_past_date(2)
-yesterday = get_past_date(1)
-today = datetime.now(timezone.utc).today()
-
-
 class EvergyException(Exception):
     """Evergy Exception Class."""
 
@@ -488,12 +483,11 @@ class Evergy:
                     self.account_number is not None and self.premise_id is not None
                 )
         if self.logged_in:
-            _LOGGER.info("Logged in as: %s, on account: %s", self.username, self.account_number)
+            _LOGGER.debug("Logged in as: %s, on account: %s", self.username, self.account_number)
         return self.logged_in
 
     async def logout(self):
         """Log out of Evergy Portal."""
-        _LOGGER.info("Logging out: %s", self.username)
 
         logout_evergy = EvergyLogoutHandler(self.session)
         await logout_evergy.logout()
@@ -561,7 +555,7 @@ class Evergy:
             start=start.isoformat(),
             end=end.isoformat(),
         )
-        _LOGGER.info("Fetching %s", url)
+        _LOGGER.debug("Fetching %s", url)
         async with self.session.get(
             url,
             headers={

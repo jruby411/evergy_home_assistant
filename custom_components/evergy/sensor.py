@@ -109,7 +109,7 @@ class EvergySensor(SensorEntity):
         )
 
     @property
-    async 115Gdef native_value(self):
+    async def native_value(self):
         try:
             if self._sensor_type == "address":
                 return await str(self._evergy_api.dashboard_data['addresses'][0]['street'])

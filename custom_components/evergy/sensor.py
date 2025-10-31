@@ -112,11 +112,14 @@ class EvergySensor(SensorEntity):
     async def native_value(self):
         try:
             if self._sensor_type == "address":
-                return await str(self._evergy_api.dashboard_data['addresses'][0]['street'])
+                ret = await self._evergy_api.dashboard_data['addresses'][0]['street']
+                return str(ret) 
             elif(self._sensor_type == "billAmount" or self._sensor_type == "isPastDue"):
-                return await str(self._evergy_api.dashboard_data[self._sensor_type])
+                ret =  await self._evergy_api.dashboard_data[self._sensor_type]
+                return str(ret)
             else:
-                return await str(self._evergy_api.usage_data[-1][self._sensor_type])
+                ret = await self._evergy_api.usage_data[-1][self._sensor_type]
+                return str(ret)
         except:
             return None
 

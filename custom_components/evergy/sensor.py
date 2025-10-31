@@ -46,7 +46,7 @@ async def async_setup_entry(
     
     async def async_update_data():
         evergy_api = hass.data[DOMAIN][config_entry.entry_id][EVERGY_OBJECT]
-        await hass.async_add_executor_job(evergy_api.get_usage)
+        await hass.async_add_executor_job(await evergy_api.get_usage)
 
     coordinator = DataUpdateCoordinator(
         hass,
